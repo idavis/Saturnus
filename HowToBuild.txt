@@ -1,0 +1,9 @@
+From the PowerShell console, execute 
+
+PS> .\build
+or
+PS> .\build.cmd
+or
+PS> .\build-release.cmd
+
+This will download and install the dependent NuGet packages and build the application. Once completed, you can open the solution.

@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Saturnus", "source\Saturnus\Saturnus.csproj", "{AE260DF3-360A-4253-AED5-5EE5004DAC46}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Saturnus.Indexer", "source\Saturnus.Indexer\Saturnus.Indexer.csproj", "{D734FE60-B53C-4C9A-9E59-3159F7EADEAB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -13,6 +15,10 @@ Global
 		{AE260DF3-360A-4253-AED5-5EE5004DAC46}.Debug|Any CPU.Build.0 = Debug|x86
 		{AE260DF3-360A-4253-AED5-5EE5004DAC46}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AE260DF3-360A-4253-AED5-5EE5004DAC46}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D734FE60-B53C-4C9A-9E59-3159F7EADEAB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D734FE60-B53C-4C9A-9E59-3159F7EADEAB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D734FE60-B53C-4C9A-9E59-3159F7EADEAB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D734FE60-B53C-4C9A-9E59-3159F7EADEAB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

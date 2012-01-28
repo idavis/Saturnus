@@ -1,0 +1,5 @@
+install_to 'lib'
+chew 'psake' '4.0.1.0'
+chew 'Lucene.Net' '2.9.4.1'
+chew 'Caliburn.Micro' '1.3.0'
+chew 'xunit' '1.9.0.1566'

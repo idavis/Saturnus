@@ -1,0 +1,17 @@
+_ReSharper.*
+bin
+obj
+dist
+debug
+lib
+release
+*.suo
+*resharper*
+*.user
+*.cache
+MSBuildOutput.txt
+TestResults
+parser.lst
+parser.report.html
+*.dotCover
+Packages/

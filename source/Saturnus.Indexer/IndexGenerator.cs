@@ -1,7 +1,7 @@
 ﻿#region License
 
 // 
-// Copyright (c) 2011, Saturnus Project Contributors
+// Copyright (c) 2012, Saturnus Project Contributors
 // 
 // Dual-licensed under the Apache License, Version 2.0, and the Microsoft Public License (Ms-PL).
 // See the file LICENSE.txt for details.
@@ -28,6 +28,8 @@ namespace Saturnus.Indexer
 {
     public class IndexGenerator : IObserver<FileSystemEventArgs>, IDisposable
     {
+        public event EventHandler IndexChanged;
+
         private IEnumerable<FileSystemWatcher> _Watchers;
 
         public IndexGenerator()
@@ -133,11 +135,21 @@ namespace Saturnus.Indexer
             }
         }
 
+        protected void RaiseIndexChanged()
+        {
+            var handler = IndexChanged;
+            if(handler != null)
+            {
+                handler( this, EventArgs.Empty );
+            }
+        }
+
         public virtual void ClearIndex()
         {
             using ( IndexWriter writer = GetIndexWriter() )
             {
                 writer.DeleteAll();
+                RaiseIndexChanged();
             }
         }
 
@@ -209,8 +221,8 @@ namespace Saturnus.Indexer
 
         public virtual IEnumerable<DirectoryInfo> GetRoots()
         {
-            //return new[] { new DirectoryInfo( @"C:\" ) };
-
+            //return new[] { new DirectoryInfo(@"C:\dev") };
+            
             string[] drives = Environment.GetLogicalDrives();
 
             foreach ( string drive in drives )
@@ -244,7 +256,6 @@ namespace Saturnus.Indexer
                 Add( root, writer, item );
             }
 
-            // Now find all the subdirectories under this directory.
             DirectoryInfo[] subDirs = root.GetDirectories();
 
             foreach ( DirectoryInfo dirInfo in subDirs )
@@ -284,28 +295,25 @@ namespace Saturnus.Indexer
         public virtual QueryParser GetQueryParser( string field )
         {
             var parser = new QueryParser( field, Analyzer );
+            parser.SetAllowLeadingWildcard( true );
             return parser;
         }
 
-        public virtual void Search( string text, IndexSearcher searcher, QueryParser parser )
+        public virtual IEnumerable<SearchItem> Search( string text )
         {
-            //Supply conditions
+            return Search( text, GetIndexSearcher(), GetQueryParser( "path" ) );
+        }
+
+        public virtual IEnumerable<SearchItem> Search( string text, IndexSearcher searcher, QueryParser parser )
+        {
             Query query = parser.Parse( text );
-
-            //Do the search
             Hits hits = searcher.Search( query );
-
-            //Display results
-            Console.WriteLine( "Searching for '" + text + "'" );
             int results = hits.Length();
-            Console.WriteLine( "Found {0} results", results );
             for ( int i = 0; i < results; i++ )
             {
                 Document doc = hits.Doc( i );
                 float score = hits.Score( i );
-                Console.WriteLine( "--Result num {0}, score {1}", i + 1, score );
-                Console.WriteLine( "--ID: {0}", doc.Get( "id" ) );
-                Console.WriteLine( "--Text found: {0}, {1}" + Environment.NewLine, doc.Get( "name" ), doc.Get( "path" ) );
+                yield return new SearchItem() { FileName = doc.Get( "name" ), FullPath = doc.Get( "path" ), Score = score };
             }
         }
 
@@ -329,6 +337,7 @@ namespace Saturnus.Indexer
                                 Field.Store.YES,
                                 Field.Index.TOKENIZED ) );
             writer.AddDocument( doc );
+            RaiseIndexChanged();
         }
 
         public virtual void Remove( IndexWriter writer, string name, string fullName )
@@ -336,6 +345,7 @@ namespace Saturnus.Indexer
             QueryParser parser = GetQueryParser( "path" );
             Query query = parser.Parse( fullName );
             writer.DeleteDocuments( query );
+            RaiseIndexChanged();
         }
     }
 }

@@ -1,8 +1,7 @@
 ﻿<Window x:Class="Saturnus.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="MainWindow" Height="350" Width="525">
-    <Grid>
-        
-    </Grid>
+        xmlns:Saturnus="clr-namespace:Saturnus"
+        Title="MainWindow" Height="396" Width="600">
+    <Saturnus:ShellView Height="Auto" Width="Auto"></Saturnus:ShellView>
 </Window>

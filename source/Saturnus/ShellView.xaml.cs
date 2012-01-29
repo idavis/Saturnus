@@ -9,14 +9,16 @@
 
 #endregion
 
-using System.Windows;
+using System.Windows.Controls;
 
 namespace Saturnus
 {
-    public partial class App : Application
+    public partial class ShellView : UserControl
     {
-        public App()
+        public ShellView()
         {
+            DataContext = new ShellViewModel();
+
             InitializeComponent();
         }
     }

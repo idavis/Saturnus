@@ -80,6 +80,15 @@ namespace Saturnus.Indexer
             return source;
         }
 
+        public static ImageSource GetFolderIcon( string folderName )
+        {
+            using ( Icon icon = SafeNativeMethods.GetSmallFolderIcon( folderName, 0 ) )
+            {
+                ImageSource imageSource = FromIcon( icon );
+                return imageSource;
+            }
+        }
+
         public static ImageSource GetIcon( string fileName )
         {
             if ( !_IsInitialized )
@@ -125,7 +134,7 @@ namespace Saturnus.Indexer
             IconSource item = ExtensionToIconLookupTable[extension];
             using ( Icon icon = SafeNativeMethods.GetSmallIcon( item.FileName, item.Index ) )
             {
-                if( icon == null)
+                if ( icon == null )
                 {
                     // bad registry setting
                     return null;

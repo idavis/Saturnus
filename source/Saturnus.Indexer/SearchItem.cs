@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using System.IO;
 using System.Windows.Media;
 
 namespace Saturnus.Indexer
@@ -18,7 +19,17 @@ namespace Saturnus.Indexer
     {
         public ImageSource Icon
         {
-            get { return IconExtractor.GetIcon( FullPath ); }
+            get
+            {
+                return IsDirectory
+                               ? IconExtractor.GetFolderIcon( FullPath )
+                               : IconExtractor.GetIcon( FullPath );
+            }
+        }
+
+        private bool IsDirectory
+        {
+            get { return Directory.Exists( FullPath ); }
         }
 
         public string FileName { get; set; }

@@ -37,7 +37,6 @@ namespace Saturnus.Indexer
                                                   [In] [MarshalAs( UnmanagedType.LPWStr )] string lpszExeFileName,
                                                   uint nIconIndex );
 
-
         /// Return Type: UINT->unsigned int
         ///lpszFile: LPCSTR->CHAR*
         ///nIconIndex: int
@@ -93,5 +92,33 @@ namespace Saturnus.Indexer
         [DllImport( NativeConstants.User32Dll, EntryPoint = NativeConstants.DestroyIcon )]
         [return : MarshalAs( UnmanagedType.Bool )]
         public static extern bool DestroyIcon( [In] IntPtr hIcon );
+
+        /// Return Type: DWORD_PTR->ULONG_PTR->unsigned int
+        ///pszPath: LPCSTR->CHAR*
+        ///dwFileAttributes: DWORD->unsigned int
+        ///psfi: SHFILEINFOA*
+        ///cbFileInfo: UINT->unsigned int
+        ///uFlags: UINT->unsigned int
+        [DllImport( NativeConstants.Shell32, EntryPoint = "SHGetFileInfoA",
+                CallingConvention = CallingConvention.StdCall )]
+        public static extern uint SHGetFileInfoA( [In] [MarshalAs( UnmanagedType.LPStr )] string pszPath,
+                                                  uint dwFileAttributes,
+                                                  ref SHFILEINFOA psfi,
+                                                  uint cbFileInfo,
+                                                  uint uFlags );
+
+        /// Return Type: DWORD_PTR->ULONG_PTR->unsigned int
+        ///pszPath: LPCWSTR->WCHAR*
+        ///dwFileAttributes: DWORD->unsigned int
+        ///psfi: SHFILEINFOW*
+        ///cbFileInfo: UINT->unsigned int
+        ///uFlags: UINT->unsigned int
+        [DllImport( NativeConstants.Shell32, EntryPoint = "SHGetFileInfoW",
+                CallingConvention = CallingConvention.StdCall )]
+        public static extern uint SHGetFileInfoW( [In] [MarshalAs( UnmanagedType.LPWStr )] string pszPath,
+                                                  uint dwFileAttributes,
+                                                  ref SHFILEINFOW psfi,
+                                                  uint cbFileInfo,
+                                                  uint uFlags );
     }
 }

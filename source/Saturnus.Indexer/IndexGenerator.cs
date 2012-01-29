@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Reflection;
 using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Standard;
@@ -99,7 +100,6 @@ namespace Saturnus.Indexer
                 case WatcherChangeTypes.Created:
                     using ( IndexWriter writer = GetIndexWriter( false ) )
                     {
-                        //FileInfo fileInfo = new FileInfo( value.FullPath );
                         string name = value.FullPath.Substring( value.FullPath.LastIndexOf( '\\' ) + 1 );
                         Add( writer, name, value.FullPath );
                     }
@@ -116,12 +116,10 @@ namespace Saturnus.Indexer
 
         public virtual void OnError( Exception error )
         {
-            //throw new NotImplementedException();
         }
 
         public virtual void OnCompleted()
         {
-            Console.WriteLine( "finished observing" );
         }
 
         #endregion
@@ -179,35 +177,32 @@ namespace Saturnus.Indexer
 
             foreach ( DirectoryInfo root in GetRoots() )
             {
-                var watcher = new FileSystemWatcher( root.FullName );
-                watcher.IncludeSubdirectories = true;
-
-                //watcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName;
+                var watcher = new FileSystemWatcher( root.FullName ){IncludeSubdirectories = true};
                 watchers.Add( watcher );
-                watcher.Created += ( sender, args ) => OnNext( args );
-                watcher.Deleted += ( sender, args ) => OnNext( args );
-                watcher.Renamed += ( sender, args ) => OnNext( args );
-                watcher.EnableRaisingEvents = true;
-
-                /*
+                
+                TimeSpan delay = TimeSpan.FromSeconds( 2 );
                 IObservable<FileSystemEventArgs> additiveChanges =
                         Observable.FromEventPattern<FileSystemEventArgs>( watcher, "Created" )
-                                .Select( e => e.EventArgs );
+                                .Buffer( delay )
+                                .SelectMany( item => item.Select( foo => foo.EventArgs ) );
 
                 additiveChanges.Subscribe( this );
 
                 IObservable<FileSystemEventArgs> subtractiveChanges =
                         Observable.FromEventPattern<FileSystemEventArgs>( watcher, "Deleted" )
-                                .Select( e => e.EventArgs );
+                                .Buffer( delay )
+                                .SelectMany( item => item.Select( foo => foo.EventArgs ) );
 
                 subtractiveChanges.Subscribe(this);
 
                 IObservable<FileSystemEventArgs> alteringChanges =
                         Observable.FromEventPattern<FileSystemEventArgs>( watcher, "Renamed" )
-                                .Select( e => e.EventArgs );
+                                .Buffer( delay )
+                                .SelectMany( item => item.Select( foo => foo.EventArgs ) );
 
                 alteringChanges.Subscribe( this );
-                 */
+                 
+                watcher.EnableRaisingEvents = true;
             }
             _Watchers = watchers;
         }

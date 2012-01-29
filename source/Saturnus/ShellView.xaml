@@ -6,5 +6,6 @@
         <TextBox x:Name="SearchCriteria" Text="{Binding SearchCriteria, UpdateSourceTrigger=PropertyChanged}"/>
         <DataGrid x:Name="Results" Height="327" ItemsSource="{Binding Items}" VerticalContentAlignment="Bottom" HorizontalContentAlignment="Center" Width="Auto">
         </DataGrid>
+        <TextBox x:Name="items" Text="{Binding ItemCount, Mode=OneWay}"/>
     </StackPanel>
 </UserControl>

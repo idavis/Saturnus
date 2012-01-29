@@ -15,6 +15,7 @@ using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reflection;
+using System.Threading;
 using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Documents;
@@ -22,17 +23,27 @@ using Lucene.Net.Index;
 using Lucene.Net.QueryParsers;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
+using NLog;
 using Directory = Lucene.Net.Store.Directory;
+using Version = Lucene.Net.Util.Version;
 
 namespace Saturnus.Indexer
 {
     public class IndexGenerator : IObserver<FileSystemEventArgs>, IDisposable
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger IndexLogger = LogManager.GetLogger( "IndexLogger" );
+        private readonly ReaderWriterLockSlim _CacheLock = new ReaderWriterLockSlim();
+
         private IEnumerable<FileSystemWatcher> _Watchers;
 
+        private Version Version
+        {
+            get { return Version.LUCENE_29; }
+        }
         public IndexGenerator()
         {
-            Analyzer = new StandardAnalyzer();
+            Analyzer = new StandardAnalyzer(Version);
         }
 
         private bool IsWatching { get; set; }
@@ -98,24 +109,60 @@ namespace Saturnus.Indexer
             switch ( value.ChangeType )
             {
                 case WatcherChangeTypes.Created:
-                    using ( IndexWriter writer = GetIndexWriter( false ) )
+                    Logger.Info( "File was created: \"{0}\"", value.FullPath );
+                    _CacheLock.EnterWriteLock();
+                    try
                     {
-                        string name = value.FullPath.Substring( value.FullPath.LastIndexOf( '\\' ) + 1 );
-                        Add( writer, name, value.FullPath );
+                        using ( IndexWriter writer = GetIndexWriter( false ) )
+                        {
+                            string name = value.FullPath.Substring( value.FullPath.LastIndexOf( '\\' ) + 1 );
+                            Add( writer, name, value.FullPath );
+                        }
+                        break;
                     }
-                    break;
+                    finally
+                    {
+                        _CacheLock.ExitWriteLock();
+                    }
                 case WatcherChangeTypes.Deleted:
-                    using ( IndexWriter writer = GetIndexWriter( false ) )
+                    Logger.Info( "File was deleted: \"{0}\"", value.FullPath );
+                    _CacheLock.EnterWriteLock();
+                    try
                     {
-                        string name = value.FullPath.Substring( value.FullPath.LastIndexOf( '\\' ) + 1 );
-                        Remove( writer, name, value.FullPath );
+                        using ( IndexWriter writer = GetIndexWriter( false ) )
+                        {
+                            string name = value.FullPath.Substring( value.FullPath.LastIndexOf( '\\' ) + 1 );
+                            Remove( writer, name, value.FullPath );
+                        }
+                        break;
                     }
-                    break;
+                    finally
+                    {
+                        _CacheLock.ExitWriteLock();
+                    }
+                case WatcherChangeTypes.Changed:
+                    Logger.Info( "File was changed: \"{0}\"", value.FullPath );
+                    _CacheLock.EnterWriteLock();
+                    try
+                    {
+                        using ( IndexWriter writer = GetIndexWriter( false ) )
+                        {
+                            string name = value.FullPath.Substring( value.FullPath.LastIndexOf( '\\' ) + 1 );
+                            Remove( writer, name, value.FullPath );
+                            Add( writer, name, value.FullPath );
+                        }
+                        break;
+                    }
+                    finally
+                    {
+                        _CacheLock.ExitWriteLock();
+                    }
             }
         }
 
         public virtual void OnError( Exception error )
         {
+            Logger.ErrorException( "Failed to index something", error );
         }
 
         public virtual void OnCompleted()
@@ -128,10 +175,19 @@ namespace Saturnus.Indexer
 
         public virtual void OnNext( RenamedEventArgs value )
         {
-            using ( IndexWriter writer = GetIndexWriter( false ) )
+            Logger.Info( "File was renamed from \"{0}\" to \"{1}\"", value.OldFullPath, value.FullPath );
+            _CacheLock.EnterWriteLock();
+            try
             {
-                Remove( writer, value.OldName, value.OldFullPath );
-                Add( writer, value.Name, value.FullPath );
+                using ( IndexWriter writer = GetIndexWriter( false ) )
+                {
+                    Remove( writer, value.OldName, value.OldFullPath );
+                    Add( writer, value.Name, value.FullPath );
+                }
+            }
+            finally
+            {
+                _CacheLock.ExitWriteLock();
             }
         }
 
@@ -146,6 +202,7 @@ namespace Saturnus.Indexer
 
         public virtual void ClearIndex()
         {
+            Logger.Info( "Clearing Index" );
             using ( IndexWriter writer = GetIndexWriter() )
             {
                 writer.DeleteAll();
@@ -155,6 +212,7 @@ namespace Saturnus.Indexer
 
         public virtual void CreateIndex()
         {
+            Logger.Info( "Creating Index" );
             using ( IndexWriter writer = GetIndexWriter() )
             {
                 foreach ( DirectoryInfo root in GetRoots() )
@@ -163,6 +221,7 @@ namespace Saturnus.Indexer
                     writer.Optimize();
                 }
             }
+            Logger.Info( "Index Created" );
         }
 
         protected virtual IndexWriter GetIndexWriter()
@@ -191,38 +250,48 @@ namespace Saturnus.Indexer
             {
                 var watcher = new FileSystemWatcher( root.FullName ) { IncludeSubdirectories = true };
                 watchers.Add( watcher );
-
-                TimeSpan delay = TimeSpan.FromSeconds( 2 );
-                IObservable<FileSystemEventArgs> additiveChanges =
-                        Observable.FromEventPattern<FileSystemEventArgs>( watcher, "Created" )
-                                .Buffer( delay )
-                                .SelectMany( item => item.Select( foo => foo.EventArgs ) );
-
-                additiveChanges.Subscribe( this );
-
-                IObservable<FileSystemEventArgs> subtractiveChanges =
-                        Observable.FromEventPattern<FileSystemEventArgs>( watcher, "Deleted" )
-                                .Buffer( delay )
-                                .SelectMany( item => item.Select( foo => foo.EventArgs ) );
-
-                subtractiveChanges.Subscribe( this );
-
-                IObservable<FileSystemEventArgs> alteringChanges =
-                        Observable.FromEventPattern<FileSystemEventArgs>( watcher, "Renamed" )
-                                .Buffer( delay )
-                                .SelectMany( item => item.Select( foo => foo.EventArgs ) );
-
-                alteringChanges.Subscribe( this );
-
+                SubscribeToFileSystemEvents( watcher );
                 watcher.EnableRaisingEvents = true;
             }
             _Watchers = watchers;
         }
 
+        private void SubscribeToFileSystemEvents( FileSystemWatcher watcher )
+        {
+            TimeSpan delay = TimeSpan.FromSeconds( 2 );
+            IObservable<FileSystemEventArgs> additiveChanges =
+                    Observable.FromEventPattern<FileSystemEventArgs>( watcher, "Created" )
+                            .Buffer( delay )
+                            .SelectMany( events => events.Select( item => item.EventArgs ) );
+
+            additiveChanges.Subscribe( this );
+
+            IObservable<FileSystemEventArgs> subtractiveChanges =
+                    Observable.FromEventPattern<FileSystemEventArgs>( watcher, "Deleted" )
+                            .Buffer( delay )
+                            .SelectMany( events => events.Select( item => item.EventArgs ) );
+
+            subtractiveChanges.Subscribe( this );
+
+            IObservable<FileSystemEventArgs> attributeChanges =
+                    Observable.FromEventPattern<FileSystemEventArgs>( watcher, "Changed" )
+                            .Buffer( delay )
+                            .SelectMany( events => events.Select( item => item.EventArgs ) );
+
+            attributeChanges.Subscribe( this );
+
+            IObservable<FileSystemEventArgs> alteringChanges =
+                    Observable.FromEventPattern<FileSystemEventArgs>( watcher, "Renamed" )
+                            .Buffer( delay )
+                            .SelectMany( events => events.Select( item => item.EventArgs ) );
+
+            alteringChanges.Subscribe( this );
+        }
+
         public virtual IEnumerable<DirectoryInfo> GetRoots()
         {
-            //return new[] { new DirectoryInfo(@"C:\dev") };
-
+            //return new[] { new DirectoryInfo( @"C:\dev" ) };
+            
             string[] drives = Environment.GetLogicalDrives();
 
             foreach ( string drive in drives )
@@ -246,21 +315,23 @@ namespace Saturnus.Indexer
 
             IEnumerable<FileInfo> files = GetFiles( root );
 
-            if ( !files.Any() )
-            {
-                return;
-            }
-
             foreach ( FileInfo item in files )
             {
                 Add( root, writer, item );
             }
 
-            DirectoryInfo[] subDirs = root.GetDirectories();
-
-            foreach ( DirectoryInfo dirInfo in subDirs )
+            try
             {
-                Index( dirInfo, writer );
+                DirectoryInfo[] subDirs = root.GetDirectories();
+
+                foreach ( DirectoryInfo dirInfo in subDirs )
+                {
+                    Index( dirInfo, writer );
+                }
+            }
+            catch ( UnauthorizedAccessException )
+            {
+                // happens on directories like \Program/ Files
             }
         }
 
@@ -294,29 +365,44 @@ namespace Saturnus.Indexer
 
         public virtual QueryParser GetQueryParser( string field )
         {
-            var parser = new QueryParser( field, Analyzer );
+            var parser = new QueryParser( Version, field, Analyzer );
             parser.SetAllowLeadingWildcard( true );
             return parser;
         }
 
         public virtual IEnumerable<SearchItem> Search( string text )
         {
-            return Search( text, GetIndexSearcher(), GetQueryParser( "path" ) );
+            var parser = new MultiFieldQueryParser( Version.LUCENE_29, SearchItem.Fields, Analyzer );
+            return Search( text, GetIndexSearcher(), parser );
         }
 
-        public virtual IEnumerable<SearchItem> Search( string text, IndexSearcher searcher, QueryParser parser )
+        public IEnumerable<SearchItem> Search( string text, IndexSearcher searcher, QueryParser parser )
         {
-            Query query = parser.Parse( text );
+            var query = new BooleanQuery();
+
+            string[] terms = text.Split( new[] { " " }, StringSplitOptions.RemoveEmptyEntries );
+            foreach ( string term in terms )
+            {
+                try
+                {
+                    Query termQuery = parser.Parse( term.Replace( "~", "" ) + "~" );
+                    query.Add(termQuery, BooleanClause.Occur.MUST);
+                }
+                catch ( ParseException )
+                {
+                    // search is freeform, so we expect this often
+                }
+            }
+
             Hits hits = searcher.Search( query );
             int results = hits.Length();
             for ( int i = 0; i < results; i++ )
             {
-                Document doc = hits.Doc( i );
-                float score = hits.Score( i );
-                yield return
-                        new SearchItem { FileName = doc.Get( "name" ), FullPath = doc.Get( "path" ), Score = score };
+                Document document = hits.Doc( i );
+                yield return SearchItem.FromDocument( document );
             }
         }
+
 
         public virtual void Add( DirectoryInfo root, IndexWriter writer, FileInfo file )
         {
@@ -330,14 +416,8 @@ namespace Saturnus.Indexer
 
         public virtual void Add( IndexWriter writer, string name, string fullName )
         {
-            var doc = new Document();
-            doc.Add( new Field( "id", Guid.NewGuid().ToString( "B" ), Field.Store.YES, Field.Index.NO ) );
-            doc.Add( new Field( "name", name, Field.Store.YES, Field.Index.TOKENIZED ) );
-            doc.Add( new Field( "path",
-                                string.Format( "{0}", fullName ),
-                                Field.Store.YES,
-                                Field.Index.TOKENIZED ) );
-            writer.AddDocument( doc );
+            Document document = SearchItem.CreateDocument( name, fullName );
+            writer.AddDocument( document );
             RaiseIndexChanged();
         }
 

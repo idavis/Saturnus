@@ -68,6 +68,9 @@
     <Reference Include="Lucene.Net, Version=2.9.4.1, Culture=neutral, PublicKeyToken=85089178b9ac3181, processorArchitecture=MSIL">
       <HintPath>..\..\lib\Lucene.Net\lib\net40\Lucene.Net.dll</HintPath>
     </Reference>
+    <Reference Include="NLog">
+      <HintPath>..\..\lib\NLog\lib\net40\NLog.dll</HintPath>
+    </Reference>
     <Reference Include="ReactiveUI">
       <HintPath>..\..\lib\reactiveui-core\lib\Net4\ReactiveUI.dll</HintPath>
     </Reference>
@@ -133,6 +136,10 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <None Include="..\..\NLog.config">
+      <Link>NLog.config</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

@@ -23,7 +23,6 @@ namespace Saturnus
     {
         private IndexGenerator _Generator;
         private string _SearchCriteria;
-
         public ShellViewModel()
         {
             var task = new Task( () =>
@@ -33,7 +32,7 @@ namespace Saturnus
                                      _Generator.Watch();
                                  } );
             task.Start();
-
+            Items = new ObservableCollection<SearchItem>();
             this.WhenAny( item => item.SearchCriteria,
                           x => x.PropertyName )
                     .Throttle( TimeSpan.FromMilliseconds( 250 ), RxApp.DeferredScheduler )
@@ -56,9 +55,7 @@ namespace Saturnus
         {
             get
             {
-                return !string.IsNullOrWhiteSpace( SearchCriteria ) &&
-                       !SearchCriteria.StartsWith( "*" ) &&
-                       !SearchCriteria.StartsWith( "?" );
+                return !string.IsNullOrWhiteSpace( SearchCriteria );
             }
         }
 
@@ -85,9 +82,16 @@ namespace Saturnus
             {
                 return;
             }
-            IEnumerable<SearchItem> results = _Generator.Search( SearchCriteria );
-            Items = new ObservableCollection<SearchItem>( results );
-            this.RaisePropertyChanged( x => x.Items );
+            Task task = new Task( () =>
+                                  {
+                                      IEnumerable<SearchItem> results = _Generator.Search( SearchCriteria );
+                                      Items = new ObservableCollection<SearchItem>( results );
+                                      this.RaisePropertyChanged( x => x.Items );
+                                      this.RaisePropertyChanged( x => x.ItemCount );
+                                  } );
+            task.Start();
         }
+
+        public string ItemCount { get { return string.Format("{0} items.", Items.Count); } }
     }
 }

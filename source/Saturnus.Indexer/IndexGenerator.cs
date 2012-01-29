@@ -28,8 +28,6 @@ namespace Saturnus.Indexer
 {
     public class IndexGenerator : IObserver<FileSystemEventArgs>, IDisposable
     {
-        public event EventHandler IndexChanged;
-
         private IEnumerable<FileSystemWatcher> _Watchers;
 
         public IndexGenerator()
@@ -126,6 +124,8 @@ namespace Saturnus.Indexer
 
         #endregion
 
+        public event EventHandler IndexChanged;
+
         public virtual void OnNext( RenamedEventArgs value )
         {
             using ( IndexWriter writer = GetIndexWriter( false ) )
@@ -137,8 +137,8 @@ namespace Saturnus.Indexer
 
         protected void RaiseIndexChanged()
         {
-            var handler = IndexChanged;
-            if(handler != null)
+            EventHandler handler = IndexChanged;
+            if ( handler != null )
             {
                 handler( this, EventArgs.Empty );
             }
@@ -189,9 +189,9 @@ namespace Saturnus.Indexer
 
             foreach ( DirectoryInfo root in GetRoots() )
             {
-                var watcher = new FileSystemWatcher( root.FullName ){IncludeSubdirectories = true};
+                var watcher = new FileSystemWatcher( root.FullName ) { IncludeSubdirectories = true };
                 watchers.Add( watcher );
-                
+
                 TimeSpan delay = TimeSpan.FromSeconds( 2 );
                 IObservable<FileSystemEventArgs> additiveChanges =
                         Observable.FromEventPattern<FileSystemEventArgs>( watcher, "Created" )
@@ -205,7 +205,7 @@ namespace Saturnus.Indexer
                                 .Buffer( delay )
                                 .SelectMany( item => item.Select( foo => foo.EventArgs ) );
 
-                subtractiveChanges.Subscribe(this);
+                subtractiveChanges.Subscribe( this );
 
                 IObservable<FileSystemEventArgs> alteringChanges =
                         Observable.FromEventPattern<FileSystemEventArgs>( watcher, "Renamed" )
@@ -213,7 +213,7 @@ namespace Saturnus.Indexer
                                 .SelectMany( item => item.Select( foo => foo.EventArgs ) );
 
                 alteringChanges.Subscribe( this );
-                 
+
                 watcher.EnableRaisingEvents = true;
             }
             _Watchers = watchers;
@@ -222,7 +222,7 @@ namespace Saturnus.Indexer
         public virtual IEnumerable<DirectoryInfo> GetRoots()
         {
             //return new[] { new DirectoryInfo(@"C:\dev") };
-            
+
             string[] drives = Environment.GetLogicalDrives();
 
             foreach ( string drive in drives )
@@ -313,7 +313,8 @@ namespace Saturnus.Indexer
             {
                 Document doc = hits.Doc( i );
                 float score = hits.Score( i );
-                yield return new SearchItem() { FileName = doc.Get( "name" ), FullPath = doc.Get( "path" ), Score = score };
+                yield return
+                        new SearchItem { FileName = doc.Get( "name" ), FullPath = doc.Get( "path" ), Score = score };
             }
         }
 

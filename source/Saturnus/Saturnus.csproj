@@ -77,9 +77,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\lib\Rx_Experimental-Main\lib\Net4\System.Reactive.dll</HintPath>
     </Reference>
-    <Reference Include="System.Windows.Interactivity, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\lib\Caliburn.Micro\lib\net40\System.Windows.Interactivity.dll</HintPath>
-    </Reference>
     <Reference Include="System.Xml" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xaml">

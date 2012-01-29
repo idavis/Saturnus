@@ -37,17 +37,21 @@
     <Reference Include="Moq">
       <HintPath>..\..\lib\Moq\lib\NET40\Moq.dll</HintPath>
     </Reference>
+    <Reference Include="PresentationCore" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Reactive, Version=1.1.11111.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\lib\Rx_Experimental-Main\lib\Net4\System.Reactive.dll</HintPath>
     </Reference>
+    <Reference Include="WindowsBase" />
     <Reference Include="xunit">
       <HintPath>..\..\lib\xunit\lib\xunit.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="IconExtractorTests.cs" />
+    <Compile Include="IndexGeneratorBenchmarks.cs" />
     <Compile Include="IndexGeneratorTests.cs" />
     <Compile Include="IndexGeneratorTestsFileSystemEvents.cs" />
     <Compile Include="IndexGeneratorTestsIndexUpdates.cs" />

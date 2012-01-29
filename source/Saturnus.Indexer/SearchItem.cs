@@ -10,15 +10,30 @@
 #endregion
 
 using System;
+using System.Windows.Media;
 
 namespace Saturnus.Indexer
 {
     public class SearchItem
     {
+        public ImageSource Icon
+        {
+            get { return IconExtractor.GetIcon( FullPath ); }
+        }
+
         public string FileName { get; set; }
         public string FullPath { get; set; }
         public int Size { get; set; }
         public DateTime Modified { get; set; }
         public float Score { get; set; }
+
+        public override string ToString()
+        {
+            return string.Format( "FileName: {0}, FullPath: {1}, Size: {2}, Modified: {3}",
+                                  FileName,
+                                  FullPath,
+                                  Size,
+                                  Modified );
+        }
     }
 }

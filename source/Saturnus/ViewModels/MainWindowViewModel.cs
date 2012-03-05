@@ -23,7 +23,7 @@ namespace Saturnus.ViewModels
 
         public MainWindowViewModel(ShellViewModel shellViewModel)
         {
-            _ShellViewModel = shellViewModel;
+            ShellViewModel = shellViewModel;
         }
 
         public MainWindowViewModel()
@@ -31,14 +31,6 @@ namespace Saturnus.ViewModels
         {
         }
 
-        private ShellViewModel _ShellViewModel;
-        public ShellViewModel ShellViewModel
-        {
-            get { return _ShellViewModel; }
-            protected set
-            {
-                this.RaiseAndSetIfChanged(x => x.ShellViewModel, value);
-            }
-        }
+        public ShellViewModel ShellViewModel { get; protected set; }
     }
 }

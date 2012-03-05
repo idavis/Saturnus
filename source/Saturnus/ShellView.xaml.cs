@@ -17,8 +17,6 @@ namespace Saturnus
     {
         public ShellView()
         {
-            DataContext = new ShellViewModel();
-
             InitializeComponent();
         }
     }

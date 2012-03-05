@@ -10,7 +10,6 @@
 #endregion
 
 using System.Windows;
-using Saturnus.Indexer;
 
 namespace Saturnus
 {
@@ -18,7 +17,6 @@ namespace Saturnus
     {
         public App()
         {
-            IconExtractor.Initialize();
             InitializeComponent();
         }
     }

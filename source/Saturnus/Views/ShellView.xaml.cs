@@ -11,14 +11,12 @@
 
 using System.Windows.Controls;
 
-namespace Saturnus
+namespace Saturnus.Views
 {
     public partial class ShellView : UserControl
     {
         public ShellView()
         {
-            DataContext = new ShellViewModel();
-
             InitializeComponent();
         }
     }

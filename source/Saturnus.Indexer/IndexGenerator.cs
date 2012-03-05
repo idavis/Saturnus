@@ -324,14 +324,18 @@ namespace Saturnus.Indexer
             {
                 DirectoryInfo[] subDirs = root.GetDirectories();
 
-                foreach ( DirectoryInfo dirInfo in subDirs )
+                foreach (DirectoryInfo dirInfo in subDirs)
                 {
-                    Index( dirInfo, writer );
+                    Index(dirInfo, writer);
                 }
             }
-            catch ( UnauthorizedAccessException )
+            catch (UnauthorizedAccessException)
             {
                 // happens on directories like \Program/ Files
+            }
+            catch (ArgumentException)
+            {
+                // directory may contain invalid characters
             }
         }
 
@@ -342,13 +346,17 @@ namespace Saturnus.Indexer
                 FileInfo[] files = root.GetFiles();
                 return files;
             }
-            catch ( UnauthorizedAccessException )
+            catch (UnauthorizedAccessException)
             {
                 // we don't have permission, skip
             }
-            catch ( DirectoryNotFoundException )
+            catch (DirectoryNotFoundException)
             {
                 // directory was deleted after we got the list, but before we parsed it
+            }
+            catch (ArgumentException)
+            {
+                // files could possibly have invalid characters
             }
             return Enumerable.Empty<FileInfo>();
         }

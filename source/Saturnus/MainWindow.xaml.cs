@@ -9,7 +9,9 @@
 
 #endregion
 
+using System;
 using System.Windows;
+using Saturnus.ViewModels;
 
 namespace Saturnus
 {
@@ -17,7 +19,15 @@ namespace Saturnus
     {
         public MainWindow()
         {
+            ViewModel = new MainWindowViewModel();
             InitializeComponent();
+        }
+
+        private MainWindowViewModel _ViewModel;
+        public MainWindowViewModel ViewModel
+        {
+            get { return _ViewModel; }
+            protected set { _ViewModel = value; }
         }
     }
 }

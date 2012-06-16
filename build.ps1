@@ -1,1 +1,1 @@
-﻿& .\build.cmd $args
+﻿& .\build.cmd @args

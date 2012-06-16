@@ -1,4 +1,5 @@
-﻿
+#Requires -Version 2.0
+
 # Helper script for those who want to run psake without importing the module.
 # This script is heavily based on the original psake.ps1
 # A NuGet bootstrapper is added allowing the script to download and install psake
@@ -25,12 +26,12 @@ param(
 # We need to remove the module if it is already loaded.
 remove-module psake -ea 'SilentlyContinue'
 
-$packages = (Resolve-Path ..\lib)
+$scriptPath = Split-Path -parent $MyInvocation.MyCommand.Definition
+$rootPath = (Resolve-Path $scriptPath\..)
 
+. $scriptPath\bootstrap.ps1 $scriptPath
 # Load psake
-$scriptPath = Split-Path -parent $MyInvocation.MyCommand.path
-$psakeModule = (Get-ChildItem $packages\* -recurse -include psake.psm1).FullName
-Write-Output "Loading psake module : $psakeModule"
+$psakeModule = @(Get-ChildItem $rootPath\* -recurse -include psake.psm1)[0].FullName
 Import-Module $psakeModule
 if (-not(test-path $buildFile)) { $buildFile = (join-path $scriptPath $buildFile) } 
 
